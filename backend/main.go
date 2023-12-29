@@ -5,31 +5,32 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/gorilla/mux"
-	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
+	// _ "github.com/lib/pq"
 )
 
 type User struct {
-	Id       int    `json:"id"`
-	Name		 string `json:"name"`
-	Email    string `json:"email"`
+	Id    int    `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
 }
 
 // main function
 func main() {
 	//connect to database
-	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
+	db, err := sql.Open("sqlite3", "test.db")
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	defer db.Close()
 
 	// create table if not exists
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, name TEXT, email TEXT)")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, email TEXT)")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err, "failed to create table")
 	}
 
 	// create router
@@ -76,7 +77,7 @@ func jsonContentTypeMiddleware(next http.Handler) http.Handler {
 
 // get all users
 func getUsers(db *sql.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
 		rows, err := db.Query("SELECT * FROM users")
 		if err != nil {
 			log.Fatal(err)
@@ -99,7 +100,7 @@ func getUsers(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-//get user by id
+// get user by id
 func getUser(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
@@ -131,7 +132,7 @@ func createUser(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-//update user
+// update user
 func updateUser(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var u User
